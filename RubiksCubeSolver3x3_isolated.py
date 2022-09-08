@@ -2,18 +2,20 @@ from tkinter import *
 import time
 from copy import deepcopy
 import random
+from os import system
+system('cls')
 session = "5x5"
-side_length = 5
+SIDE_LENGTH = 5
 root = Tk()
 logo_sticker = "YJ.jpg"
 frame = LabelFrame(root,bd=5,width=1,height=1)
 frame.grid(row=2,column=2,columnspan=4)
 frame.grid_propagate(False)
 def visualize(input_scramble,available_turns):
-    global cube_nxn,side_length,visualization,buttons_root,moves_done,undone_moves,root,cube_nxn_solved,scramble
+    global cube_nxn,SIDE_LENGTH,visualization,buttons_root,moves_done,undone_moves,root,cube_nxn_solved,scramble
     turns = available_turns
     scramble = input_scramble
-    reverse_translation={str(side_length)+"L'": 'R', str(side_length)+'L': "R'", str(side_length)+'L2': 'R2', str(side_length)+"U'": 'D', str(side_length)+'U': "D'", str(side_length)+'U2': 'D2', str(side_length)+"F'": 'B', str(side_length)+'F': "B'", str(side_length)+'F2': 'B2'}
+    reverse_translation={str(SIDE_LENGTH)+"L'": "R", str(SIDE_LENGTH)+'L': "R'", str(SIDE_LENGTH)+'L2': 'R2', str(SIDE_LENGTH)+"U'": 'D', str(SIDE_LENGTH)+"U": "D'", str(SIDE_LENGTH)+'U2': 'D2', str(SIDE_LENGTH)+"F'": 'B', str(SIDE_LENGTH)+'F': "B'", str(SIDE_LENGTH)+'F2': 'B2'}
     moves_done=[]
     undone_moves=[]
     o = "Orange"
@@ -22,7 +24,12 @@ def visualize(input_scramble,available_turns):
     b = "Blue"
     y = "Yellow"
     w = "White"
-    
+    TOP_FACE = 0
+    LEFT_FACE = 1
+    FRONT_FACE = 2
+    RIGHT_FACE = 3
+    BACK_FACE = 4
+    BOTTOM_FACE = 5
     # Algoritmus na složení 3x3
     def find_a_solution():
         print(f"\n\n\n\n\nAlgorithm Start\nScramble: {scramble}\n\n\n\n\n")
@@ -38,22 +45,32 @@ def visualize(input_scramble,available_turns):
             do_move(move,show=False)
         # Nebude fungovat, když bude kostka natočena jinak, než W navrchu a Y zespodu
         # Srovnání kostky - w nahoře, r vepředu
-        center=round((side_length**2)/2)
-        cube_colors = [w, g, r, b, o, y]
+        center=round((SIDE_LENGTH**2)/2)
+        CUBE_COLORS = [w, g, r, b, o, y]
+        CENTER_LINE = SIDE_LENGTH//2+1
+        ROTATION_NOTATION_FOR_FACES = {
+            0: "U",
+            1: "L",
+            2: "F",
+            3: f"{SIDE_LENGTH}L",
+            4: f"{SIDE_LENGTH}F",
+            5: f"{SIDE_LENGTH}U"
+        }
         def CountLineCompletion(face: int, line: int, color: str) -> int:
             colorOnFaceCount = 0
-            for piece in range(line*side_length + 1, (line + 1)*side_length - 1):
+            for piece in range(line*SIDE_LENGTH + 1, (line + 1)*SIDE_LENGTH - 1):
                 if cube_nxn[face][piece] == color and piece != center:
                     colorOnFaceCount += 1
             return colorOnFaceCount
+            
         def SumOfColorsOnFace(face: int) -> int:
-            countOfColorsOnFace = {w: 0, g: 0, r: 0, b: 0, o: 0, y: 0}
-            for line_horizontal in range(1, side_length-1):
-                for piece in range(line_horizontal*side_length + 1, (line_horizontal + 1)*side_length - 1):
-                    if piece != center:
-                        countOfColorsOnFace[cube_nxn[face][piece]] += 1
-            return countOfColorsOnFace
-            #for move in ["U", f"{side_length}U", "F", f"{side_length}F", "L", f"{side_length}L"]:
+            countOfFaceCenterColor = 0
+            for line_horizontal in range(1, SIDE_LENGTH-1):
+                for piece in range(line_horizontal*SIDE_LENGTH + 1, (line_horizontal + 1)*SIDE_LENGTH - 1):
+                    if cube_nxn[face][piece] == cube_nxn[face][center]:
+                        countOfFaceCenterColor+=1
+            return countOfFaceCenterColor
+            #for move in ["U", f"{SIDE_LENGTH}U", "F", f"{SIDE_LENGTH}F", "L", f"{SIDE_LENGTH}L"]:
             #    add_move_to_solution(move)
         def FindMostCommonColorOnFace(colorCount: dict) -> str:
             mostCommonColor = [w, 0]
@@ -72,22 +89,276 @@ def visualize(input_scramble,available_turns):
                     5: 0
                 }
                 for face in countsOfMovesCommonColorsOnFaces.keys():
-                    countOfColorsOnFace = SumOfColorsOnFace(face)
-                    mostCommonColorOnFaceCount = max(countOfColorsOnFace.values())
-                    countsOfMovesCommonColorsOnFaces[face] = mostCommonColorOnFaceCount
+                    countsOfMovesCommonColorsOnFaces[face] = SumOfColorsOnFace(face)
                 startingFace = max(countsOfMovesCommonColorsOnFaces.items(), key=lambda x: x[1])[0]
                 print(f"{countsOfMovesCommonColorsOnFaces=}")
                 print(f"{startingFace=}")
                 return startingFace
             startingFace = ChooseStartingFace()
-            colorOfStartingFace = cube_colors[startingFace]
+            colorOfStartingSide = cube_nxn[startingFace][center]
+            print(f"{colorOfStartingSide=}")
             def SetCubeToDefaultPositionForSolving():
-                while cube_nxn[0][center]!=colorOfStartingFace and cube_nxn[2][center]!=colorOfStartingFace and cube_nxn[5][center]!=colorOfStartingFace:
+                while cube_nxn[0][center]!=colorOfStartingSide and cube_nxn[2][center]!=colorOfStartingSide and cube_nxn[5][center]!=colorOfStartingSide:
                     add_move_to_solution("y")
-                while cube_nxn[0][center]!=colorOfStartingFace:
+                while cube_nxn[0][center]!=colorOfStartingSide:
                     add_move_to_solution("x")
+                add_move_to_solution("x")
             SetCubeToDefaultPositionForSolving()
+            ### changed
+            def FindMostSolvedLineOnFace(face: int, lineColor: str, line: int) -> None:
+                line -= 1
+                print("FindMostSolvedLineOnFace()")
+                mostSolvedLinesOnDifferentRotations = {
+                    0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0
+                }
+                for rotation in range(4):
+                    for piece in range(line*SIDE_LENGTH + 1, (line + 1)*SIDE_LENGTH - 1):
+                        if cube_nxn[face][piece] == lineColor:
+                            mostSolvedLinesOnDifferentRotations[rotation] += 1
+                    add_move_to_solution(ROTATION_NOTATION_FOR_FACES[face])
+                mostSolvedLine_Rotation = max(mostSolvedLinesOnDifferentRotations, key=mostSolvedLinesOnDifferentRotations.get)
+                mostSolvedLine_Rotation_color = mostSolvedLinesOnDifferentRotations[mostSolvedLine_Rotation]
 
+                def CountPiecesOnLine():
+                    alreadySolvedPiecesOnCurrentLine_ = 0
+                    for piece in range(line*SIDE_LENGTH + 1, (line + 1)*SIDE_LENGTH - 1):
+                        if cube_nxn[face][piece] == lineColor:
+                            alreadySolvedPiecesOnCurrentLine_ += 1
+                    return alreadySolvedPiecesOnCurrentLine_
+                
+                for _ in range(4):
+                    alreadySolvedPiecesOnCurrentLine = CountPiecesOnLine()
+                    if alreadySolvedPiecesOnCurrentLine != mostSolvedLine_Rotation_color:
+                        add_move_to_solution(ROTATION_NOTATION_FOR_FACES[face])
+                    else:
+                        break
+                        
+            def SolveLine(solvedFace: int, lineInProgress: int, invertPush: False) -> None:
+                line = lineInProgress
+                def InvertResult(boolean: bool) -> bool:
+                    #print(f"{boolean=}")
+                    return False if boolean else True
+                def PushLine():
+                    print("PushLine()")
+                    add_move_to_solution(f"{line}L")
+                    if line == CENTER_LINE:
+                        add_move_to_solution("U")
+                    elif line < CENTER_LINE:
+                        add_move_to_solution("U2")
+                        add_move_to_solution(f"{line}L'")
+                        add_move_to_solution("U")
+                    else:
+                        add_move_to_solution("U2")
+                        add_move_to_solution(f"{line}L'")
+                        add_move_to_solution("U'")
+                def SolvePushedLine():
+                    inverted = False
+                    print("SolvePushedLine()")
+                    
+                    def TrySolveLineUsingFrontFace():
+                        print("TrySolveLineUsingFrontFace()")
+                        for _ in range(4):
+                            add_move_to_solution(ROTATION_NOTATION_FOR_FACES[FRONT_FACE])
+                            if cube_nxn[FRONT_FACE][piece] == colorOfStartingSide:
+                                add_move_to_solution(f"{line}L'")
+                                result = line < CENTER_LINE
+                                result = InvertResult(result) if invertPush else result
+                                if result:
+                                    add_move_to_solution("U")
+                                    add_move_to_solution(f"{line}L")
+                                    add_move_to_solution("U'")
+                                else:
+                                    add_move_to_solution("U'")
+                                    add_move_to_solution(f"{line}L")
+                                    add_move_to_solution("U")
+                                break
+                            
+                    def TrySolveLineUsingBottomFace():
+                        print("TrySolveLineUsingBottomFace()")
+                        for _ in range(4):
+                            add_move_to_solution(ROTATION_NOTATION_FOR_FACES[BOTTOM_FACE])
+                            if cube_nxn[BOTTOM_FACE][piece] == colorOfStartingSide:
+                                add_move_to_solution(f"{line}L2")
+                                if line < CENTER_LINE:
+                                    add_move_to_solution("U")
+                                    add_move_to_solution(f"{line}L2")
+                                    add_move_to_solution("U'")
+                                else:
+                                    add_move_to_solution("U'")
+                                    add_move_to_solution(f"{line}L2")
+                                    add_move_to_solution("U")
+                                break
+                    
+                    def TrySolveLineUsingBackFace(): 
+                        print("TrySolveLineUsingBackFace()")
+                        for _ in range(4):
+                            add_move_to_solution(ROTATION_NOTATION_FOR_FACES[BACK_FACE])
+                            if cube_nxn[BACK_FACE][piece] == colorOfStartingSide:
+                                add_move_to_solution(f"{line}L")
+                                if line < CENTER_LINE:
+                                    add_move_to_solution("U")
+                                    add_move_to_solution(f"{line}L'")
+                                    add_move_to_solution("U'")
+                                else:
+                                    add_move_to_solution("U'")
+                                    add_move_to_solution(f"{line}L'")
+                                    add_move_to_solution("U")
+                                break
+                    ### invertPush??
+                    ### line_horizontal
+                    def TrySolveLineUsingTopFace():
+                        
+                        print("TrySolveLineUsingTopFace()")
+                        # Move lines potentially containing required pieces from the top face to the front face, then solve top using front
+                        if lineInProgress != CENTER_LINE:
+                            """
+                            result = line < CENTER_LINE
+                            result = InvertResult(result) if invertPush else result
+                            """
+                            if not invertPush:
+                                if line < CENTER_LINE:
+                                    add_move_to_solution("U")
+                                    add_move_to_solution(f"{line}L")
+                                    add_move_to_solution("F2")
+                                    add_move_to_solution(f"{line}L'")
+                                    add_move_to_solution("U'")
+                                else:
+                                    add_move_to_solution("U'")
+                                    add_move_to_solution(f"{line}L")
+                                    add_move_to_solution("F2")
+                                    add_move_to_solution(f"{line}L'")
+                                    add_move_to_solution("U")
+                                TrySolveLineUsingFrontFace()
+                            else:
+                                add_move_to_solution("U")
+                                add_move_to_solution(f"{CENTER_LINE}L")
+                                add_move_to_solution("F")
+                                add_move_to_solution(f"{CENTER_LINE}L'")
+                                add_move_to_solution("U'")
+                                TrySolveLineUsingFrontFace()
+                                print("[R]TrySolveLineUsingTopFace()")
+                                if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                                    add_move_to_solution("U")
+                                    for line_BetweenSolvedLineAndCenterLine in range(line+1, CENTER_LINE):
+                                        add_move_to_solution(F"{line_BetweenSolvedLineAndCenterLine}L")
+                                    add_move_to_solution("F2")
+                                    for line_BetweenSolvedLineAndCenterLine in range(line+1, CENTER_LINE):
+                                        add_move_to_solution(F"{line_BetweenSolvedLineAndCenterLine}L'")
+
+                                    for line_BetweenCenterLineAndRight in range(CENTER_LINE+1, SIDE_LENGTH):
+                                        add_move_to_solution(F"{line_BetweenCenterLineAndRight}L")
+                                    add_move_to_solution("F2")
+                                    for line_BetweenCenterLineAndRight in range(CENTER_LINE+1, SIDE_LENGTH):
+                                        add_move_to_solution(F"{line_BetweenCenterLineAndRight}L'")
+                                    
+                                    add_move_to_solution("U'")
+                                    TrySolveLineUsingFrontFace()
+                        else:
+                            add_move_to_solution("U")
+                            for line_LeftToCenterLine in range(2, CENTER_LINE):
+                                add_move_to_solution(f"{line_LeftToCenterLine}L")
+                            add_move_to_solution("F2")
+                            for line_LeftToCenterLine in range(2, CENTER_LINE):
+                                add_move_to_solution(f"{line_LeftToCenterLine}L'")
+                            
+                            for line_RightToCenterLine in range(CENTER_LINE+1, SIDE_LENGTH):
+                                add_move_to_solution(f"{line_RightToCenterLine}L")
+                            add_move_to_solution("F2")
+                            for line_RightToCenterLine in range(CENTER_LINE+1, SIDE_LENGTH):
+                                add_move_to_solution(f"{line_RightToCenterLine}L'")
+                            add_move_to_solution("U'")
+                    
+                    def TrySolveLineUsingLeftAndRightFaces():
+                        print("TrySolveLineUsingLeftAndRightFaces()")
+                        add_move_to_solution("y")
+                        add_move_to_solution("U'")
+
+                        # "Right"
+                        TrySolveLineUsingFrontFace()
+                        print("[R]TrySolveLineUsingLeftAndRightFaces()")
+                        # "Left"
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                            TrySolveLineUsingBackFace()
+
+                        add_move_to_solution("U")
+                        add_move_to_solution("y")
+                        add_move_to_solution("y")
+                        add_move_to_solution("y")
+                    
+                    def EjectLineBackPieces():
+                        print("EjectLineBackPieces()")
+                        if lineInProgress == CENTER_LINE:
+                            add_move_to_solution(f"{lineInProgress}L2")
+                            add_move_to_solution("F")
+                            add_move_to_solution(f"{lineInProgress}L2")
+                            TrySolveLineUsingFrontFace()
+                        elif lineInProgress < CENTER_LINE:
+                            add_move_to_solution("U")
+                            add_move_to_solution(f"{line}L2")
+                            add_move_to_solution("F2")
+                            add_move_to_solution(f"{line}L2")
+                            add_move_to_solution("U'")
+                        else:
+                            add_move_to_solution("U'")
+                            add_move_to_solution(f"{line}L2")
+                            add_move_to_solution("F2")
+                            add_move_to_solution(f"{line}L2")
+                            add_move_to_solution("U")
+                    line = 2
+                    FindMostSolvedLineOnFace(TOP_FACE, CUBE_COLORS[solvedFace], lineInProgress)
+
+                    for piece in range((lineInProgress - 1)*SIDE_LENGTH + 1, lineInProgress*SIDE_LENGTH - 1):
+                        print(f"========== {piece=} ==========")
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:# and piece != center:
+                            # Front
+                            TrySolveLineUsingFrontFace()
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                            # Top
+                            TrySolveLineUsingTopFace()
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                            # Bottom
+                            TrySolveLineUsingBottomFace()
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                            # Right and Left
+                            TrySolveLineUsingLeftAndRightFaces()
+                        if cube_nxn[TOP_FACE][piece] != colorOfStartingSide:
+                            # Back
+                            EjectLineBackPieces()
+                        line+=1
+                        continue
+                        if line > CENTER_LINE:
+                            inverted = True
+                    line = lineInProgress
+                ### line_horizontal
+                def PullLine():
+                    print("PullLine()")
+                    if lineInProgress != CENTER_LINE:
+                        result = line < CENTER_LINE
+                        result = InvertResult(result) if invertPush else result
+                        if result:
+                            add_move_to_solution("U")
+                            add_move_to_solution(f"{lineInProgress}L")
+                            add_move_to_solution("U2")
+                        else:
+                            add_move_to_solution("U'")
+                            add_move_to_solution(f"{lineInProgress}L")
+                            add_move_to_solution("U2")
+                        add_move_to_solution(f"{lineInProgress}L'")
+                    else:
+                        add_move_to_solution("U'")
+                        add_move_to_solution(f"{lineInProgress}L'")
+                
+                PushLine()
+                SolvePushedLine()
+                PullLine()
+            
+            for line_horizontal in range(2, SIDE_LENGTH):
+                invertPush = False if line_horizontal <= CENTER_LINE else True
+                print(f"========== {line_horizontal=} {invertPush=} ==========")
+                SolveLine(startingFace, line_horizontal, invertPush)
         def algorithm_3x3x3():
             # Ze souřadnic vrátí barvy rohu
             def get_corner_colors(corner):
@@ -441,20 +712,20 @@ def visualize(input_scramble,available_turns):
                 cube_nxn[xa][xb] = slice_colors[xc][xd]
     # Vytvořit kostku
     def create_the_cube(show=True):
-        global cube_nxn,side_length,cube_nxn_solved
-        cube_nxn = [[w]*side_length*side_length,
-        [g]*side_length*side_length,
-        [r]*side_length*side_length,
-        [b]*side_length*side_length,
-        [o]*side_length*side_length,
-        [y]*side_length*side_length]
+        global cube_nxn,SIDE_LENGTH,cube_nxn_solved
+        cube_nxn = [[w]*SIDE_LENGTH*SIDE_LENGTH,
+        [g]*SIDE_LENGTH*SIDE_LENGTH,
+        [r]*SIDE_LENGTH*SIDE_LENGTH,
+        [b]*SIDE_LENGTH*SIDE_LENGTH,
+        [o]*SIDE_LENGTH*SIDE_LENGTH,
+        [y]*SIDE_LENGTH*SIDE_LENGTH]
         cube_nxn_solved=deepcopy(cube_nxn)
-        if side_length == 1:
+        if SIDE_LENGTH == 1:
             cube_nxn[0][0] == w
-        elif side_length%2!=0:
-            cube_nxn[0][side_length**2//2]=w
+        elif SIDE_LENGTH%2!=0:
+            cube_nxn[0][SIDE_LENGTH**2//2]=w
         else:
-            cube_nxn[0][round(side_length*(side_length/2)+side_length/2)]=w
+            cube_nxn[0][round(SIDE_LENGTH*(SIDE_LENGTH/2)+SIDE_LENGTH/2)]=w
         if show:
             show_cube()
     # Resetovat scramble kostky
@@ -466,14 +737,14 @@ def visualize(input_scramble,available_turns):
         show_cube()
     # Otočení "vrchní" strany kostky
     def rotate_face(slc):
-        global cube_nxn,side_length
-        cube_nxn[slc] = sum([list(reversed(cube_nxn[slc][i::side_length])) for i in range(side_length)],[])
+        global cube_nxn,SIDE_LENGTH
+        cube_nxn[slc] = sum([list(reversed(cube_nxn[slc][i::SIDE_LENGTH])) for i in range(SIDE_LENGTH)],[])
     # Otočení strany
     def do_move(turn,show=True):
         def reverse_str(item):
             a=list(reversed(item))
             return a
-        global cube_nxn,side_length
+        global cube_nxn,SIDE_LENGTH
         print(f'--- Move: {turn} ---')
         if turn == "y":
             cube_nxn[1],cube_nxn[2],cube_nxn[3],cube_nxn[4] = cube_nxn[2],cube_nxn[3],cube_nxn[4],cube_nxn[1]
@@ -511,27 +782,27 @@ def visualize(input_scramble,available_turns):
                 except:
                     x=1
                 if y[1] == "":
-                    slice_move((x-1)*side_length,x*side_length,1)
+                    slice_move((x-1)*SIDE_LENGTH,x*SIDE_LENGTH,1)
                     if x==1:
                         rotate_face(0)
-                    elif x==side_length:
+                    elif x==SIDE_LENGTH:
                         rotate_face(5)
                         rotate_face(5)
                         rotate_face(5)
                 if y[1] == "'":
-                    slice_move((x-1)*side_length,x*side_length,3)
+                    slice_move((x-1)*SIDE_LENGTH,x*SIDE_LENGTH,3)
                     if x==1:
                         rotate_face(0)
                         rotate_face(0)
                         rotate_face(0)
-                    elif x==side_length:
+                    elif x==SIDE_LENGTH:
                         rotate_face(5)
                 elif y[1] == "2":
-                    slice_move((x-1)*side_length,x*side_length,2)
+                    slice_move((x-1)*SIDE_LENGTH,x*SIDE_LENGTH,2)
                     if x==1:
                         rotate_face(0)
                         rotate_face(0)
-                    elif x==side_length:
+                    elif x==SIDE_LENGTH:
                         rotate_face(5)
                         rotate_face(5)
             except IndexError:
@@ -544,48 +815,48 @@ def visualize(input_scramble,available_turns):
                     except:
                         x=1
                     if y[1] == "'":
-                        e=cube_nxn[3][x-1::side_length]
-                        f=cube_nxn[5][side_length*(x-1):side_length*x]
-                        g=cube_nxn[1][side_length-x::side_length]
-                        h=cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]
-                        cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]=e
-                        cube_nxn[3][x-1::side_length]=reverse_str(f)
-                        cube_nxn[5][side_length*(x-1):side_length*x]=g
-                        cube_nxn[1][side_length-x::side_length]=reverse_str(h)
+                        e=cube_nxn[3][x-1::SIDE_LENGTH]
+                        f=cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]
+                        g=cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]
+                        h=cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]
+                        cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]=e
+                        cube_nxn[3][x-1::SIDE_LENGTH]=reverse_str(f)
+                        cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]=g
+                        cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]=reverse_str(h)
                         if x==1:
                             rotate_face(2)
                             rotate_face(2)
                             rotate_face(2)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(4)	
                     elif y[1] == "":
-                        e=cube_nxn[3][x-1::side_length]
-                        f=cube_nxn[5][side_length*(x-1):side_length*x]
-                        g=cube_nxn[1][side_length-x::side_length]
-                        h=cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]
-                        cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]=reverse_str(g)
-                        cube_nxn[3][x-1::side_length]=h
-                        cube_nxn[5][side_length*(x-1):side_length*x]=reverse_str(e)
-                        cube_nxn[1][side_length-x::side_length]=f
+                        e=cube_nxn[3][x-1::SIDE_LENGTH]
+                        f=cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]
+                        g=cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]
+                        h=cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]
+                        cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]=reverse_str(g)
+                        cube_nxn[3][x-1::SIDE_LENGTH]=h
+                        cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]=reverse_str(e)
+                        cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]=f
                         if x==1:
                             rotate_face(2)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(4)
                             rotate_face(4)
                             rotate_face(4)
                     else:
-                        e=cube_nxn[3][x-1::side_length]
-                        f=cube_nxn[5][side_length*(x-1):side_length*x]
-                        g=cube_nxn[1][side_length-x::side_length]
-                        h=cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]
-                        cube_nxn[0][side_length**2-side_length*x:side_length**2-side_length*(x-1)]=reverse_str(f)
-                        cube_nxn[3][x-1::side_length]=reverse_str(g)
-                        cube_nxn[5][side_length*(x-1):side_length*x]=reverse_str(h)
-                        cube_nxn[1][side_length-x::side_length]=reverse_str(e)
+                        e=cube_nxn[3][x-1::SIDE_LENGTH]
+                        f=cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]
+                        g=cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]
+                        h=cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]
+                        cube_nxn[0][SIDE_LENGTH**2-SIDE_LENGTH*x:SIDE_LENGTH**2-SIDE_LENGTH*(x-1)]=reverse_str(f)
+                        cube_nxn[3][x-1::SIDE_LENGTH]=reverse_str(g)
+                        cube_nxn[5][SIDE_LENGTH*(x-1):SIDE_LENGTH*x]=reverse_str(h)
+                        cube_nxn[1][SIDE_LENGTH-x::SIDE_LENGTH]=reverse_str(e)
                         if x==1:
                             rotate_face(2)
                             rotate_face(2)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(4)
                             rotate_face(4)
                 except IndexError:
@@ -595,48 +866,48 @@ def visualize(input_scramble,available_turns):
                     except:
                         x=1
                     if y[1] == "'":
-                        a=cube_nxn[2][x-1::side_length]
-                        b=cube_nxn[5][x-1::side_length]
-                        c=cube_nxn[4][side_length-x::side_length]
-                        d=cube_nxn[0][x-1::side_length]
-                        cube_nxn[0][x-1::side_length]=a
-                        cube_nxn[2][x-1::side_length]=b
-                        cube_nxn[5][x-1::side_length]=reverse_str(c)
-                        cube_nxn[4][side_length-x::side_length]=reverse_str(d)
+                        a=cube_nxn[2][x-1::SIDE_LENGTH]
+                        b=cube_nxn[5][x-1::SIDE_LENGTH]
+                        c=cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]
+                        d=cube_nxn[0][x-1::SIDE_LENGTH]
+                        cube_nxn[0][x-1::SIDE_LENGTH]=a
+                        cube_nxn[2][x-1::SIDE_LENGTH]=b
+                        cube_nxn[5][x-1::SIDE_LENGTH]=reverse_str(c)
+                        cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]=reverse_str(d)
                         if x==1:
                             rotate_face(1)
                             rotate_face(1)
                             rotate_face(1)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(3)
                     elif y[1] == "":
-                        a=cube_nxn[2][x-1::side_length]
-                        b=cube_nxn[5][x-1::side_length]
-                        c=cube_nxn[4][side_length-x::side_length]
-                        d=cube_nxn[0][x-1::side_length]
-                        cube_nxn[0][x-1::side_length]=reverse_str(c)
-                        cube_nxn[2][x-1::side_length]=d
-                        cube_nxn[5][x-1::side_length]=a
-                        cube_nxn[4][side_length-x::side_length]=reverse_str(b)
+                        a=cube_nxn[2][x-1::SIDE_LENGTH]
+                        b=cube_nxn[5][x-1::SIDE_LENGTH]
+                        c=cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]
+                        d=cube_nxn[0][x-1::SIDE_LENGTH]
+                        cube_nxn[0][x-1::SIDE_LENGTH]=reverse_str(c)
+                        cube_nxn[2][x-1::SIDE_LENGTH]=d
+                        cube_nxn[5][x-1::SIDE_LENGTH]=a
+                        cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]=reverse_str(b)
                         if x==1:
                             rotate_face(1)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(3)
                             rotate_face(3)
                             rotate_face(3)
                     else:
-                        a=cube_nxn[2][x-1::side_length]
-                        b=cube_nxn[5][x-1::side_length]
-                        c=cube_nxn[4][side_length-x::side_length]
-                        d=cube_nxn[0][x-1::side_length]
-                        cube_nxn[0][x-1::side_length]=b
-                        cube_nxn[2][x-1::side_length]=reverse_str(c)
-                        cube_nxn[5][x-1::side_length]=d
-                        cube_nxn[4][side_length-x::side_length]=reverse_str(a)
+                        a=cube_nxn[2][x-1::SIDE_LENGTH]
+                        b=cube_nxn[5][x-1::SIDE_LENGTH]
+                        c=cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]
+                        d=cube_nxn[0][x-1::SIDE_LENGTH]
+                        cube_nxn[0][x-1::SIDE_LENGTH]=b
+                        cube_nxn[2][x-1::SIDE_LENGTH]=reverse_str(c)
+                        cube_nxn[5][x-1::SIDE_LENGTH]=d
+                        cube_nxn[4][SIDE_LENGTH-x::SIDE_LENGTH]=reverse_str(a)
                         if x==1:
                             rotate_face(1)
                             rotate_face(1)
-                        elif x==side_length:
+                        elif x==SIDE_LENGTH:
                             rotate_face(3)
                             rotate_face(3)
         if show:
@@ -651,54 +922,52 @@ def visualize(input_scramble,available_turns):
     # Zobrazit kostku
     def show_cube():
         visualization_started=time.time()
-        global logo,logo_sticker,side_length
-        from PIL import ImageTk,Image
-        logo = ImageTk.PhotoImage(Image.open(logo_sticker).resize((30, 35), Image.ANTIALIAS))
+        global logo,logo_sticker,SIDE_LENGTH
         for i in visualization.winfo_children():
             i.destroy()
         ind = 0
-        for ia in range(1,side_length+1):
-            for ib in range(side_length+1,side_length*2+1):
+        for ia in range(1,SIDE_LENGTH+1):
+            for ib in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[0][ind].lower(),padx=15,pady=10,bd=5)
                 b.grid()
                 ind+=1
         ind = 0
-        for ia in range(side_length+1,side_length*2+1):
-            for ib in range(1,side_length+1):
+        for ia in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
+            for ib in range(1,SIDE_LENGTH+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[1][ind].lower(),padx=15,pady=10,bd=5)
                 b.grid()
                 ind+=1
         ind = 0
-        for ia in range(side_length*2+1,side_length*3+1):
-            for ib in range(side_length+1,side_length*2+1):
+        for ia in range(SIDE_LENGTH*2+1,SIDE_LENGTH*3+1):
+            for ib in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[5][ind].lower(),padx=15,pady=10,bd=5)
                 b.grid()
                 ind+=1
         ind = 0
-        for ia in range(side_length+1,side_length*2+1):
-            for ib in range(side_length+1,side_length*2+1):
+        for ia in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
+            for ib in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[2][ind].lower(),padx=15,pady=10,bd=5)
                 b.grid()
                 ind+=1
         ind = 0
-        for ia in range(side_length+1,side_length*2+1):
-            for ib in range(side_length*2+1,side_length*3+1):
+        for ia in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
+            for ib in range(SIDE_LENGTH*2+1,SIDE_LENGTH*3+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[3][ind].lower(),padx=15,pady=10,bd=5)
                 b.grid()
                 ind+=1
         ind = 0
-        for ia in range(side_length+1,side_length*2+1):
-            for ib in range(side_length*3+1,side_length*4+1):
+        for ia in range(SIDE_LENGTH+1,SIDE_LENGTH*2+1):
+            for ib in range(SIDE_LENGTH*3+1,SIDE_LENGTH*4+1):
                 a = LabelFrame(visualization,bd=5)
                 a.grid(row=ia,column=ib)
                 b = Label(a,bg=cube_nxn[4][ind].lower(),padx=15,pady=10,bd=5)
@@ -736,7 +1005,7 @@ def visualize(input_scramble,available_turns):
         rndsc_turns.remove("z")
         scramble=[]
         scramble.append(random.choice(rndsc_turns))
-        for i in range(side_length**2):
+        for i in range(SIDE_LENGTH**2):
             while True:
                 turn = random.choice(rndsc_turns)
                 if turn[0] != scramble[-1][0]:
@@ -753,20 +1022,20 @@ def visualize(input_scramble,available_turns):
         show_cube()# Tlačítka - zamíchání kostky
         program_title(scramble)
     def debug_moves():
-        moves = ['x', 'y', "U'", "U'", "U'", "U'", "U'", "U'", "U'", 'U', "U'", "U'", "3L'", '4F', '5L2', "4F'", '5L2', "U'", "U'", "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "5U'", "5U'", "5U'", "5U'", '5F', '5F', '5F', '5F', 'L', 'L', 'L', 'L', '3F', '5U2', "3F'", '5U', '5U', '5U', '5U', "U'", "U'", 'U', "U'", "U'", "U'", "4L'", 'U', "3F'", "U'", '3F']
-        moves=['y', 'y', 'y', 'x', 'y', "6F'", '6F', "U'", "U'", "U'", "U'", "U'", "U'", "2L'", 'F', 'F', 'F', 'F', "7U'", '3L2', '6F', '7L2', "6F'", '7L2', "5F'", '5F', "U'", "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", '5L2', 'F', 'F', 'F', 'F', "7U'", '6L2', '5F', '7L2', "5F'", '7L2', "4F'", '4F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'y', 'y', 'y', 'U', "2L'", 'U', '2L', 'U2', 'y', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '4U', 'F', "4U'", "F'", '7L', "3L'", "5L'", 'U', "4F'", "U'", '4F', "3F'", '3F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '3L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "4L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "5L'", '5F', '7L2', "5F'", '7L2', "2F'", '2F', "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', '2L2', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F2', '4L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '5L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", '6L2', '6F', '7L2', "6F'", '7L2', 'y', 'y', "6F'", '6F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', "2L'", 'F', "5L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F2', '6L', '6F', '7L2', "6F'", '7L2', "5F'", '5F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', "2L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '3L', 'F', 'F', 'F', 'F', "7U'", '4L2', "6L'", '5F', '7L2', "5F'", '7L2', "4F'", '4F', "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", '2L2', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '5L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '6L', 'U', "4F'", "U'", '4F', "3F'", '3F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '2L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "5L'", 'F', 'F', 'F', 'F', "7U'", '6L2', '5F', '7L2', "5F'", '7L2', "2F'", '2F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", '3L2', 'F', 'F', 'F', 'F', "7U'", "7U'", '4L2', 'F', 'F', 'F', 'F', '5L2', '6F', '7L2', "6F'", '7L2', 'y', 'y', '4L', '4L', '4L', '2L', 'U', "U'", "2L'", "U'", "U'", "U'", "U'", "U'", "U'", "U'", 'F', "2L'", 'U', '2L', "U'", "5L'", "U'", '5L', 'U', 'F', 'F', 'F', "6L'", "U'", '6L', 'U', 'U', '2L', 'U2', "2L'", '3L', 'U', "U'", "3L'", "U'", "U'", "U'", "U'", 'F', "2L'", 'U', '2L', "U'", 'F', "5L'", "U'", '5L', 'U', 'U', '3L', 'U2', "3L'", '4L', 'U', "U'", "4L'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', '2L2', "U'", '2L2', 'U', 'F', 'F', "5L'", "U'", '5L', 'U', 'F', 'F', 'F', 'F', '6L2', 'U', '6L2', "U'", '4L', "U'", "4L'"]
-        moves=['y', 'y', 'y', 'x', 'y', "6F'", '6F', "U'", "U'", "U'", "U'", "U'", "U'", "2L'", 'F', 'F', 'F', 'F', "7U'", '3L2', '6F', '7L2', "6F'", '7L2', "5F'", '5F', "U'", "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", '5L2', 'F', 'F', 'F', 'F', "7U'", '6L2', '5F', '7L2', "5F'", '7L2', "4F'", '4F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'y', 'y', 'y', 'U', "2L'", 'U', '2L', 'U2', 'y', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '4U', 'F', "4U'", "F'", '7L', "3L'", "5L'", 'U', "4F'", "U'", '4F', "3F'", '3F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '3L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "4L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "5L'", '5F', '7L2', "5F'", '7L2', "2F'", '2F', "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', '2L2', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F2', '4L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '5L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", '6L2', '6F', '7L2', "6F'", '7L2', 'y', 'y', "6F'", '6F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', "2L'", 'F', "5L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F2', '6L', '6F', '7L2', "6F'", '7L2', "5F'", '5F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', "2L'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '3L', 'F', 'F', 'F', 'F', "7U'", '4L2', "6L'", '5F', '7L2', "5F'", '7L2', "4F'", '4F', "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", '2L2', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '5L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F2', '6L', 'U', "4F'", "U'", '4F', "3F'", '3F', "U'", "U'", "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F2', '2L', 'F', 'F', 'F', 'F', "7U'", "7U'", "7U'", "7U'", '7F', '7F', '7F', '7F', 'L', 'L', 'L', 'L', "7L'", '3U', 'F2', "3U'", 'F2', '7L', 'F', 'F', 'F', 'F', "U'", '4L', '5L', '6L', '2L', 'U', "5L'", 'F', 'F', 'F', 'F', "7U'", '6L2', '5F', '7L2', "5F'", '7L2', "2F'", '2F', "U'", "U'", "U'", "U'", 'F', 'F', 'F', 'F', "7U'", '3L2', 'F', 'F', 'F', 'F', "7U'", "7U'", '4L2', 'F', 'F', 'F', 'F', '5L2', '6F', '7L2', "6F'", '7L2', 'y', 'y']
-        for move in moves:	
+        help_moves = ['y', 'y', 'x', 'x', '2L', 'U2', "2L'", 'U', 'U', 'U', 'U', 'U', 'U', 'F', 'F', 'F', "3L'", "U'", '3L', 'U', 'F', 'F', 'F', 'F', "U'", '4L', 'F2', "4L'", 'U', 'F', 'F', 'F', 'F', '5U', '5U', '5U', '4L2', "U'", '4L2', 'U', 'U', '2L', 'U2', "2L'"]
+
+
+
+        for move in help_moves:	
             do_move(move,show=False)
         show_cube()
     # Panel tlačítek
     def buttons_gui(): 
-        global buttons_root,side_length,mod_scramble
+        global buttons_root,SIDE_LENGTH,mod_scramble
         turns_buttons=deepcopy(turns) # Srovnání délky tlačítek
         max_len=len(str(max(turns_buttons,key=len)))
         buttons_root = Toplevel() # Config tlačítkového panelu
         buttons_root.title("These Moves Can Be Applied:")
-        buttons_root.iconbitmap("rubiks_cube_icon.ico")
         buttons_root.protocol("WM_DELETE_WINDOW",quit)
         buttons = LabelFrame(buttons_root,bd=10)
         buttons.grid()
@@ -817,26 +1086,29 @@ def visualize(input_scramble,available_turns):
     show_cube()
     find_a_solution()
 def show_scramble():
-    global scramble,session,side_length,frame,turns
-    side_length = int(session.split("x")[0])
+    global scramble,session,SIDE_LENGTH,frame,turns
+    SIDE_LENGTH = int(session.split("x")[0])
     scramble = []
     turns = ["L","L'","L2","U","U'","U2","F","F'","F2"]
     turns_ = []
-    for ia in range(side_length-2):
+    for ia in range(SIDE_LENGTH-2):
         for ib in turns:
             turns_.append(f"{ia+2}{ib}")
     turns.extend(turns_)
     turns_=deepcopy(turns)
     for i in ["L'","L","L2","U'","U","U2","F'","F","F2"]:
-        turns.insert(9,str(side_length)+i)
+        turns.insert(9,str(SIDE_LENGTH)+i)
     scramble.append(random.choice(turns))
-    for i in range(0,random.randint(side_length*10-side_length,side_length*10)):
+    for i in range(0,random.randint(SIDE_LENGTH*10-SIDE_LENGTH,SIDE_LENGTH*10)):
         while True:
             temp = random.choice(turns)
             if temp[0] != scramble[-1][0]:
                 scramble.append(temp)
                 break
     turns.extend(["x","y","z"])
-    visualize(["2L'", 'F', '3L', 'U2', '5U2', '2U2', '3F', '5U', '3L2', 'L2', '3L', '2U', '3U', '2U', '5L', 'L', "5F'", "2U'", 'L2', '4U', "L'", '5U', "4F'", "5F'", "L'", '2U2', "5U'", '3U', '4L2', 'L', 'F2', '5F', "U'", "3L'", "4U'", '5L2', "L'", '3L2', '4U2', '5U2', '3L2', '5U', "3U'", '2U2', "L'", '4U2', "3F'"],turns)
+    #visualize(["2L'", 'F', '3L', 'U2', '5U2', '2U2', '3F', '5U', '3L2', 'L2', '3L', '2U', '3U', '2U', '5L', 'L', "5F'", "2U'", 'L2', '4U', "L'", '5U', "4F'", "5F'", "L'", '2U2', "5U'", '3U', '4L2', 'L', 'F2', '5F', "U'", "3L'", "4U'", '5L2', "L'", '3L2', '4U2', '5U2', '3L2', '5U', "3U'", '2U2', "L'", '4U2', "3F'"],turns)
+    visualize(["2L'", "5U'", "3F'", '5U2', '2U', "5U'", '3F', "4U'", '2F2', '3U2', '2L', "3F'", '5F2', 'F', '4U2', 'L2', '3U2', "2L'", '4F2', "2F'", '5L2', '2U2', "3F'", '4U2', "2U'", '5L2'], turns)
+
+
 show_scramble()
 root.mainloop()
